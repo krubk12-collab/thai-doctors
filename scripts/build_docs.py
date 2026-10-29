@@ -146,6 +146,7 @@ H += [
  ['smt_tb', 'โรงพยาบาลสมิติเวช ธนบุรี', 'เอกชน', 'ธนบุรี', '', 'https://www.samitivejhospitals.com/th/doctor', 'กรุงเทพฯ'],
  ['smt_ct', 'โรงพยาบาลสมิติเวช ไชน่าทาวน์', 'เอกชน', 'สัมพันธวงศ์', '', 'https://www.samitivejhospitals.com/th/doctor', 'กรุงเทพฯ'],
  ['smt_sr', 'โรงพยาบาลสมิติเวช ศรีราชา', 'เอกชน', 'ศรีราชา', '', 'https://www.samitivejhospitals.com/th/doctor', 'ชลบุรี'],
+ ['smt_x', 'โรงพยาบาลสมิติเวช (เว็บไม่ระบุสาขา)', 'เอกชน · สุขุมวิท/ศรีนครินทร์/ธนบุรี ฯลฯ โทรถามสาขาก่อนไป', 'ไม่ระบุเขต', '02-022-2222', 'https://www.samitivejhospitals.com/th/doctor', 'กรุงเทพฯ'],
  ['smt_cb', 'โรงพยาบาลสมิติเวช ชลบุรี', 'เอกชน', 'เมืองชลบุรี', '', 'https://www.samitivejhospitals.com/th/doctor', 'ชลบุรี'],
  ['bh', 'โรงพยาบาลบำรุงราษฎร์', 'เอกชน', 'วัฒนา', '1378', 'https://www.bumrungrad.com/th/doctors', 'กรุงเทพฯ'],
  ['vj', 'โรงพยาบาลเวชธานี', 'เอกชน', 'บางกะปิ', '02-734-0000', 'https://www.vejthani.com/th/', 'กรุงเทพฯ'],
@@ -166,7 +167,7 @@ for f in sorted(glob.glob('smt/*')):
     for b in br.split(', '):
         h = next((k for s, k in SMB if s in b), None)
         if h and h not in hids: hids.append(h)
-    if not hids: miss += 1
+    if not hids: miss += 1; hids = ['smt_x']  # หน้าเว็บไม่บอกสาขา → ไม่เดา
     for h in hids: D.append([h, N(seg[0]), '', sp, ''])
 print('สมิติเวชไม่ระบุสาขา รพ.', miss)
 for f in sorted(glob.glob('bh/*')):
