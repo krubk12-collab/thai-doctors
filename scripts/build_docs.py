@@ -299,15 +299,22 @@ for f in sorted(glob.glob('dent/i_*.html')):
     for lab in ('ที่ทำงานหลัก', 'ที่ทำงานรอง'):
         if lab not in L: continue
         k = L.index(lab); w = L[k + 1]; tel = L[k + 3] if k + 3 < len(L) and L[k + 2] == 'เบอร์โทรที่ทำงาน' and re.match(r'[\d\-\s]{6,}$', L[k + 3]) else ''
-        if 'นนทบุรี' not in w or re.match(r'(สำนัก|กรม|กอง|สสจ|สถาบันรับรอง|มูลนิธิ|สำนักงาน)', w): continue
-        hid = next((h for r, h in WPK if re.search(r, w)), None)
-        if not hid:  # คลินิกเอกชน → สร้าง รพ.ใหม่ตามชื่อที่ทำงาน
-            wn = re.sub(r'ไทรนัอย2 ห้อง', 'ไทรน้อย', w); wn = re.split(r'\s+(?=\d|เลขที่|อาคาร|ซอย|ถ\.|ถนน|ต\.|หมู่|ม\.\s?\d)', wn, 1)[0].strip()
-            amp = re.search(r'(?:อ\.|อำเภอ)\s?(\S+)', w); amp = amp.group(1) if amp else 'ไม่ระบุ'
-            if wn not in seen_wp:
-                seen_wp[wn] = 'rtd_%d' % len(seen_wp)
-                H.append([seen_wp[wn], wn, 'คลินิกทันตกรรม (เอกชน)', amp, tel, 'https://www.royalthaident.org/specialist/info/' + os.path.basename(f)[2:-5], 'นนทบุรี'])
-            hid = seen_wp[wn]
+        if re.match(r'(สำนัก|กรม|กอง|สสจ|สถาบันรับรอง|มูลนิธิ|สำนักงาน|การประปา)', w): continue  # ไม่ได้ตรวจคนไข้
+        pv = re.search(r'(?:จ\.|จังหวัด)\s?([ก-๙]+)', w); pv = 'กรุงเทพฯ' if 'กรุงเทพ' in w else (pv.group(1) if pv else '')
+        if not pv: continue
+        hid = next((h for r, h in WPK if re.search(r, w)), None) if pv == 'นนทบุรี' else None
+        wn = re.sub(r'ไทรนัอย2 ห้อง', 'ไทรน้อย', w); wn = re.split(r'\s+(?=\d|เลขที่|อาคาร|ซอย|ถ\.|ถนน|ต\.|ตำบล|แขวง|หมู่|ม\.\s?\d)', wn, 1)[0].strip()
+        wn = re.sub(r'^(กลุ่มงาน|ฝ่าย|งาน|แผนก)ทันต(กรรม|สาธารณสุข)\s*', '', wn).strip() or wn
+        if not hid:  # รพ.ที่มีในแอปแล้ว (ชื่อตรง จังหวัดเดียวกัน) ใช้ id เดิม · ไม่งั้นสร้างที่ใหม่ตามชื่อที่ทำงาน
+            hid = next((h[0] for h in sorted(H, key=lambda h: -len(h[1])) if h[6] == pv and len(h[1]) > 8 and h[1] in wn), None)
+        if not hid:
+            amp = re.search(r'(?:อ\.|อำเภอ|เขต)\s?([ก-๙]+)', w); amp = amp.group(1) if amp else 'ไม่ระบุ'
+            key = (re.sub(r'\s+', '', wn), pv)
+            if key not in seen_wp:
+                seen_wp[key] = 'rtd_%d' % len(seen_wp)
+                kind = 'โรงพยาบาล/หน่วยบริการ (ทันตกรรม)' if re.search(r'โรงพยาบาล|รพ\.|คณะ|มหาวิทยาลัย|สถาบัน|สาธารณสุข|อนามัย', wn) else 'คลินิกทันตกรรม'
+                H.append([seen_wp[key], wn, kind, amp, tel, 'https://www.royalthaident.org/specialist/info/' + os.path.basename(f)[2:-5], pv])
+            hid = seen_wp[key]
         D.append([hid, re.sub(r'\s+', ' ', name), 'ทันตกรรม' + (f' · โทร {tel}' if tel and hid in ('idt', 'pnk', 'pcmc', 'nmc') else ''), sp + ' (ทะเบียนราชวิทยาลัยทันตแพทย์)', ''])
 
 # พระนั่งเกล้า: อ่านด้วยตาจากรูปตารางบน healthserv.net/hospitalnews/8564 (เปิดผ่าน Chrome ลูกพี่อนุญาต 29ต.ค.69) รูปราวปี 67 → เตือนว่าอาจเก่า/สะกดผิด
@@ -370,7 +377,13 @@ REG = {'central': 'กรุงเทพฯ นนทบุรี ปทุม�
        'north': 'เชียงใหม่ เชียงราย ลำปาง ลำพูน แม่ฮ่องสอน น่าน พะเยา แพร่ อุตรดิตถ์ ตาก สุโขทัย พิษณุโลก พิจิตร กำแพงเพชร เพชรบูรณ์ นครสวรรค์ อุทัยธานี',
        'south': 'ชุมพร ระนอง สุราษฎร์ธานี พังงา ภูเก็ต กระบี่ นครศรีธรรมราช ตรัง พัทลุง สตูล สงขลา ปัตตานี ยะลา นราธิวาส'}
 P2R = {p: r for r, ps in REG.items() for p in ps.split()}
-assert all(h[6] in P2R for h in H), [h for h in H if h[6] not in P2R]
+# ทุกแห่งขึ้นต้นประเภทด้วย 'รัฐ' หรือ 'เอกชน' (แอปใช้กรอง) — กฎอยู่ใน sector.py
+from sector import sector
+for h in H:
+    sec = sector(h[1], h[2]); k = re.sub(r'\s*\((เอกชน)\)', '', h[2]).strip()
+    if not k.startswith(sec): h[2] = sec + ' · ' + k
+bad = [h for h in H if h[6] not in P2R]; print('จังหวัดไม่รู้จัก ตัดทิ้ง', [(h[1], h[6]) for h in bad][:15])
+H = [h for h in H if h[6] in P2R]; D = [d for d in D if d[0] in {h[0] for h in H}]
 for r in REG:
     hs = [h for h in H if P2R[h[6]] == r]; ids = {h[0] for h in hs}
     out = {'asof': '2569-10-29', 'hosp': hs, 'd': [d for d in D if d[0] in ids]}
