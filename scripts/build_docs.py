@@ -180,11 +180,21 @@ for f in sorted(glob.glob('vj/*')):
     if not L or 'อนุสาขา' not in L: continue
     i = L.index('อนุสาขา'); g = L[i + 3] if L[i + 2] == 'กลุ่มสาขา' else ''
     D.append(['vj', N(L[0].split(' - ')[0]), g, L[i + 1], ''])
+# เครือ รพ.กรุงเทพ สาขาอื่น (fetch_bdms.sh) slug → (อำเภอ, จังหวัด)
+BR = {'pattaya': ('บางละมุง', 'ชลบุรี'), 'rayong': ('เมืองระยอง', 'ระยอง'), 'rayong-cancer': ('เมืองระยอง', 'ระยอง'), 'pluakdaeng': ('ปลวกแดง', 'ระยอง'),
+      'chanthaburi': ('เมืองจันทบุรี', 'จันทบุรี'), 'trat': ('เมืองตราด', 'ตราด'), 'bangkok-bone-brain': ('ห้วยขวาง', 'กรุงเทพฯ'), 'bangkok-cancer': ('ห้วยขวาง', 'กรุงเทพฯ'),
+      'phetchaburi': ('เมืองเพชรบุรี', 'เพชรบุรี'), 'huahin': ('หัวหิน', 'ประจวบคีรีขันธ์'), 'ratchaburi': ('เมืองราชบุรี', 'ราชบุรี'),
+      'chiangmai': ('เมืองเชียงใหม่', 'เชียงใหม่'), 'chiangrai': ('เมืองเชียงราย', 'เชียงราย'), 'phitsanulok': ('เมืองพิษณุโลก', 'พิษณุโลก'),
+      'ratchasima': ('เมืองนครราชสีมา', 'นครราชสีมา'), 'khaoyai': ('ปากช่อง', 'นครราชสีมา'), 'pakchong': ('ปากช่อง', 'นครราชสีมา'),
+      'khonkaen': ('เมืองขอนแก่น', 'ขอนแก่น'), 'udon': ('เมืองอุดรธานี', 'อุดรธานี'),
+      'phuket': ('เมืองภูเก็ต', 'ภูเก็ต'), 'siriroj': ('เมืองภูเก็ต', 'ภูเก็ต'), 'hatyai': ('หาดใหญ่', 'สงขลา'), 'surat': ('เมืองสุราษฎร์ธานี', 'สุราษฎร์ธานี'), 'samui': ('เกาะสมุย', 'สุราษฎร์ธานี')}
 for f in sorted(glob.glob('bkh/*')):
     L = lines(f); m = re.search(r'_th_([a-z-]+)_doctor_', f)
     if not L or not m or 'ความชำนาญเฉพาะทางสาขา' not in L: continue
-    hid = {'bangkok': 'bkh', 'bangkok-heart': 'bkh_heart', 'sanamchan': 'bkh_sanamchan'}.get(m.group(1))
-    if not hid: continue
+    b = m.group(1); hid = {'bangkok': 'bkh', 'bangkok-heart': 'bkh_heart', 'sanamchan': 'bkh_sanamchan'}.get(b) or 'bkh_' + b.replace('-', '_')
+    if b in BR and not any(h[0] == hid for h in H):  # สาขาต่างจังหวัด: ชื่อ รพ.เอาจากหัวเว็บ "นพ.… | โรงพยาบาลกรุงเทพ…"
+        H.append([hid, L[0].split(' | ')[-1].strip(), 'เอกชน', BR[b][0], '1719', f'https://www.bangkokhospital.com/th/{b}/doctor', BR[b][1]])
+    if not any(h[0] == hid for h in H): continue
     get = lambda lab: L[L.index(lab) + 1] if lab in L else ''
     sub = get('อนุสาขา') if get('อนุสาขา') not in ('ภาษา', 'การศึกษา') else ''
     D.append([hid, N(L[0].split(' | ')[0]), get('ศูนย์และคลินิก'), ' · '.join(x for x in (get('ความชำนาญเฉพาะทางสาขา'), sub) if x), ''])
@@ -211,10 +221,74 @@ for a, b in zip(idx, idx[1:]):
     seg = L[a:b]; t = ' '.join(seg[1:])
     dy = [d for d in DAYS if 'วัน' + d in t or (d == 'พุธ' and 'วันพุทธ' in t)]
     D.append(['nmc', N(seg[0]), seg[1], seg[2] if seg[2] != 'ตารางแพทย์ออกตรวจ' else '', ', '.join(dy)])
+# อีก 5 คนอยู่ในเนื้อหาหน้า "แพทย์เฉพาะทาง" (WP REST nmc/pages.json) แต่หน้าเว็บจริงซ่อนไว้ → ลงพร้อมคำเตือน (ลูกพี่ขอ 29ต.ค.69)
+WARN = '⚠️ อาจย้ายแล้ว (ชื่อไม่อยู่หน้าเว็บหลัก) โทรถามก่อน'
+for n, dept, spec, dy in [('พญ.ปราญฤทัย วงศ์สุวรรณ์', 'หู คอ จมูก', 'โสต ศอ นาสิกแพทย์', 'อังคาร, พุธ, ศุกร์'), ('พญ.ธัญกมล พลเดช', 'ตรวจโรคทั่วไป', 'แพทย์เวชปฏิบัติทั่วไป', 'อังคาร'),
+                          ('นพ.สรกฤษฏิ์ ศิริหาญยากร', 'ตรวจโรคทั่วไป', 'แพทย์เวชปฏิบัติทั่วไป', 'พุธ'), ('พญ.รมิดา สุปัญญาโชติสกุล', 'ตรวจโรคทั่วไป', 'แพทย์เวชปฏิบัติทั่วไป', 'พฤหัสบดี'),
+                          ('พญ.ชญานิศ อุทิศานนท์', 'ตรวจโรคทั่วไป', 'แพทย์เวชปฏิบัติทั่วไป', 'ศุกร์')]:
+    D.append(['nmc', n, dept, spec + ' · ' + WARN, dy])
+
+# แพทย์แผนจีนทั่วประเทศ จากทะเบียน chinesedoctor.online (tcm/d_<slug>.html, 221 คลินิก) — ชื่อ พจ. + เวลาให้คำปรึกษารายวัน
+# ที่อยู่: บรรทัดก่อนรหัสไปรษณีย์ = จังหวัด, ก่อนนั้น = อำเภอ/เขต · คนที่อยู่ ศูนย์บริการการแพทย์นนทบุรี → ใส่ใน 'nmc' · อื่น ๆ → hid 'tcm_<slug>'
+for f in sorted(glob.glob('tcm/d_*.html')):
+    s = open(f, encoding='utf8', errors='replace').read(); L = lines(f)
+    z = next((k for k, x in enumerate(L) if re.fullmatch(r'\d{5}', x)), None)
+    if z is None: continue
+    prov = {'กรุงเทพมหานคร': 'กรุงเทพฯ'}.get(L[z - 1], L[z - 1]); amp = re.sub(r'^(อ\.|อำเภอ|เขต)\s*', '', L[z - 2])
+    if amp in ('เมือง', prov): amp = 'เมือง' + prov.replace('พระนครศรีอยุธยา', 'พระนครศรีอยุธยา')
+    slug = os.path.basename(f)[2:-5]; nm = re.search(r'<title>([^<|]+)', s).group(1).strip()
+    up = re.search(r'(\d\d)/(\d\d)/(\d{4}) - \d', ' '.join(L)); up = f' · อัปเดตทะเบียน {up[2]}/{up[1]}/{int(up[3]) + 543}' if up else ''
+    hid = 'nmc' if 'ศูนย์การแพทย์นนทบุรี' in nm else 'tcm_' + slug.replace('-', '_')
+    tel = L[L.index('เบอร์โทรติดต่อ') + 1] if 'เบอร์โทรติดต่อ' in L else ''
+    if hid != 'nmc':
+        H.append([hid, nm, 'คลินิก/หน่วยแพทย์แผนจีน', amp, tel, 'https://chinesedoctor.online/chinese-doctor/' + slug, prov])
+    for k, x in enumerate(L):
+        if not x.startswith('พจ.') or 'แพทย์แผนจีน' not in L[k:]: continue
+        j = L.index('แพทย์แผนจีน', k); seg = L[k:j]
+        dy = [f'{d} {seg[i + 1]}' + (' ' + seg[i + 2] if i + 2 < len(seg) and re.match(r'\d', seg[i + 2]) else '')
+              for i, d in enumerate(seg) if d in DAYS and i + 1 < len(seg) and seg[i + 1] != 'ปิด']
+        dept = 'แพทย์แผนจีน' + (' ต่อ 6000' if hid == 'nmc' else '')
+        D.append([hid, re.sub(r'\s*พจ\.\d+$', '', x), dept, 'แพทย์แผนจีน ฝังเข็ม ยาจีน · ' + (seg[1] if len(seg) > 1 else '') + ' (ทะเบียน chinesedoctor.online' + up + ')', ', '.join(dy).replace(',,', ',')])
+
+# จุดบริการแพทย์แผนไทยในนนทบุรี (เว็บไม่ลงชื่อหมอ) — ลงเป็นแถว "จุดบริการ" ให้ค้นเจอในหมวดแผนไทย (ลูกพี่ขอ 29ต.ค.69)
+SVC = '🌿 จุดบริการแพทย์แผนไทย (ไม่มีรายชื่อแพทย์)'
+H += [['bbt', 'โรงพยาบาลบางบัวทอง', 'รัฐ (สธ.)', 'บางบัวทอง', '02-571-7899', 'https://healthserv.net/hospitalnews/1342', 'นนทบุรี'],
+      ['nbm', 'ศูนย์บริการสาธารณสุข เทศบาลนครนนทบุรี', 'รัฐ (เทศบาล)', 'เมืองนนทบุรี', '02-969-1680', 'https://healthserv.net/healthupdate/8621', 'นนทบุรี'],
+      ['pnk', 'โรงพยาบาลพระนั่งเกล้า', 'รัฐ (สธ.)', 'เมืองนนทบุรี', '02-528-4567', 'https://pranangklaohospital.moph.go.th/pnk/view_doctor_schedule.php', 'นนทบุรี']]
+D += [['bbt', SVC, 'คลินิกการแพทย์แผนไทยและการแพทย์ทางเลือก ตึก 4 ชั้น 2 · โทร 089-888-2627, 02-571-7899 ต่อ 409', 'แผนไทย นวดรักษา ยาสมุนไพร ประคบ อบสมุนไพร ฟื้นฟูแม่หลังคลอด (ข้อมูล healthserv อัปเดต ต.ค.66)', 'จันทร์-ศุกร์ 08:30-16:30, นอกเวลา จ./พ./ศ. 16:30-20:30, เสาร์ 08:30-16:30'],
+      ['nbm', SVC, 'คลินิกแพทย์แผนไทย', 'แผนไทย (โทรถามสาขาศูนย์ที่ใกล้บ้าน มี 11 ศูนย์)', 'จันทร์-ศุกร์ 08:30-16:00 (ยกเว้นนักขัตฤกษ์)'],
+      ['nmc', SVC, 'ศูนย์การแพทย์แผนไทย ชั้น 5 · โทร ต่อ 5010, 064-675-8391', 'แผนไทย (เบิกได้ตามสิทธิ)', '']]
+# พระนั่งเกล้า: อ่านด้วยตาจากรูปตารางบน healthserv.net/hospitalnews/8564 (เปิดผ่าน Chrome ลูกพี่อนุญาต 29ต.ค.69) รูปราวปี 67 → เตือนว่าอาจเก่า/สะกดผิด
+OLD = ' · ⚠️ จากรูปตารางเก่า (~ปี 67) อ่านด้วยตา ตัวสะกดอาจผิด โทรถามก่อน'
+D += [['pnk', n, 'แพทย์แผนไทย (ห้องตรวจ OPD / ห้องยาสมุนไพร)', 'แผนไทย' + OLD, dy] for n, dy in [
+          ('พท.รัตติกา ปัญญาวงศ์', 'จันทร์, อังคาร, พุธ 08.00-15.00'), ('พท.สุธางค์ ขันดาวงศ์', 'จันทร์, พฤหัสบดี, ศุกร์ 08.00-15.00'),
+          ('พท.จรัสศรี กลั่นจุ้ย', 'อังคาร, ศุกร์ 08.00-15.00'), ('พท.ธมนวรรณ วิรุณศรี', 'พุธ, พฤหัสบดี 08.00-15.00'),
+          ('นพ.จีระศักดิ์ ศรีเจริญ', 'อังคาร 13.00-15.00, พฤหัสบดี 08.00-12.00')]]
+D += [['pnk', n, 'ห้องตรวจแพทย์ทางเลือก ฝังเข็ม', 'ฝังเข็ม' + OLD, 'จันทร์ 08.00-11.00, 13.00-16.00' + x] for n, x in [
+          ('นพ.โกสินทร์ ตรีรัตน์วีรพงษ์', ''), ('นพ.สมคิด ปิยะมาน', ' (ผู้ป่วยใหม่ 08.00-10.00)'),
+          ('นพ.กิตติเดช วงศ์สรรกร', ' (ผู้ป่วยใหม่ 13.00-14.00)'), ('พจ.ลักษิกา สกุลกำจรกิจ', '')]]
+
+# เครือเกษมราษฎร์ (fetch_kasem.sh) หน้ารายชื่อ: "<ชื่อ> (ว.xxxxx)" | แผนก | สาขา · รัตนาธิเบศร์ใช้ id 'kr' เดิม (แทนรายชื่อพิมพ์มือ 10 คน)
+KB = {'bangkae': ('บางแค', 'กรุงเทพฯ'), 'prachachuen': ('บางซื่อ', 'กรุงเทพฯ'), 'ramkhamhaeng': ('สะพานสูง', 'กรุงเทพฯ'), 'rattanatibeth': ('บางบัวทอง', 'นนทบุรี'),
+      'pathumthani': ('ไม่ระบุอำเภอ', 'ปทุมธานี'), 'saraburi': ('เมืองสระบุรี', 'สระบุรี'), 'chachoengsao': ('เมืองฉะเชิงเทรา', 'ฉะเชิงเทรา'),
+      'prachinburi': ('ศรีมหาโพธิ', 'ปราจีนบุรี'), 'sriburin': ('เมืองเชียงราย', 'เชียงราย'), 'maesai': ('แม่สาย', 'เชียงราย')}
+H = [h for h in H if h[0] != 'kr']; D = [d for d in D if d[0] != 'kr']
+PRE = {'นายแพทย์': 'นพ.', 'แพทย์หญิง': 'พญ.', 'ทันตแพทย์หญิง': 'ทพญ.', 'ทันตแพทย์': 'ทพ.'}
+for b, (amp, prov) in KB.items():
+    hid = 'kr' if b == 'rattanatibeth' else 'ksm_' + b; nm = None
+    for f in sorted(glob.glob(f'ksm/{b}_*.html')):
+        L = lines(f); nm = nm or next((x for x in L if x.startswith('โรงพยาบาลเกษมราษฎร์')), 'โรงพยาบาลเกษมราษฎร์')
+        for k in range(len(L) - 2):
+            # บางสาขาไม่ลงเลข ว. → ดูว่าบรรทัดที่ 3 เป็นชื่อสาขา (อยู่ในชื่อ รพ.) แทน
+            if not (re.search(r'ว\.\s*\d+', L[k]) or (len(L[k + 2]) < 25 and L[k + 2] in nm and re.search(r'(นพ|พญ|ทพ|ทพญ)\.|แพทย์', L[k]))): continue
+            n = re.sub(r'\(?\s*ว\.\s*\d+\s*\)?', '', L[k]).strip()
+            n = re.sub(r'^(ทันตแพทย์หญิง|ทันตแพทย์|นายแพทย์|แพทย์หญิง)\s*', lambda m: PRE[m.group(1)], n)
+            D.append([hid, N(n), L[k + 1], '', ''])
+    H.append([hid, nm.split('|')[0].strip(), 'เอกชน', amp, '', f'https://www.kasemrad.co.th/th/{b}/doctor', prov])
 
 # เก็บเฉพาะแพทย์/ทันตแพทย์ (มีคำนำหน้า) ตัดนักกายภาพ นักฝึกพูด ฯลฯ ที่บางเว็บลงปนมา
 DR = re.compile(r'^([ก-๙]{1,4}\.|\(พิเศษ\)|(พัน|นาวา|เรือ|ร้อย)[ก-๙]*\s|\s)*(นพ|พญ|ทพ|ทพญ)\.')  # ยศ/ตำแหน่งวิชาการนำหน้าได้ เช่น ผศ.พ.ท.นพ.
-ok = lambda d: DR.match(d[1]) or ('ทันต' in d[2] and not re.match(r'^(คุณ|นาง|นาย)', d[1]))  # ทันตแพทย์บางเว็บไม่ใส่คำนำหน้า
+ok = lambda d: d[1].startswith('🌿') or DR.match(d[1]) or re.match(r'^(พจ|พท|พทป)\.', d[1]) or ('ทันต' in d[2] and not re.match(r'^(คุณ|นาง|นาย)', d[1]))  # ทันตแพทย์บางเว็บไม่ใส่คำนำหน้า
 drop = [d for d in D if not ok(d)]; D = [d for d in D if ok(d)]
 import collections as _c; print('ตัดที่ไม่ใช่แพทย์', len(drop), _c.Counter(d[0] for d in drop), [d[1] for d in drop if d[0] not in ('tb',)][:12])
 # หมอคนเดียวหลายแถว (หลายแผนก/หลาย URL) → รวมเป็นแถวเดียว แผนกที่เพิ่มต่อท้ายในช่องสาขา
@@ -236,8 +310,21 @@ H = [h for h in H if any(d[0] == h[0] for d in D)]  # ตัด รพ.ที่
 # รพ.ที่ตัวดึงยังโหลดไม่ครบ → ยังไม่ปล่อย (กันคนเข้าใจว่ามีหมอแค่นั้น) · ตั้งผ่าน env PENDING="smt_,bh" (คำนำหน้า id)
 PEND = tuple(x for x in os.environ.get('PENDING', '').split(',') if x)
 if PEND: D = [d for d in D if not d[0].startswith(PEND)]; H = [h for h in H if not h[0].startswith(PEND)]; print('ยังไม่ปล่อย', PEND)
-out = {'asof': '2569-10-29', 'hosp': H, 'd': D}
-js = '// รายชื่อแพทย์ กทม. ปริมณฑล ภาคกลาง ดึงจากเว็บ รพ. ' + out['asof'] + ' — สร้างโดย build_docs.py ห้ามแก้มือ\nconst DOCS=' + json.dumps(out, ensure_ascii=False) + ';\n'
-for p in ('~/Desktop/sick/doctors.js', '~/Desktop/thai-doctors/data/central.js'):  # สำเนาสำรองบนโฮสต์ + repo GitHub (โหลดผ่าน jsDelivr)
-    os.makedirs(os.path.dirname(os.path.expanduser(p)), exist_ok=True); open(os.path.expanduser(p), 'w', encoding='utf8').write(js)
+# แยกไฟล์ตามภาค: แอปโหลดภาคที่เลือกทีละไฟล์ (central = กทม.+ปริมณฑล เดิม ชื่อตัวแปร DOCS) · ภาคอื่น → window.DOCSR[<ภาค>]
+REG = {'central': 'กรุงเทพฯ นนทบุรี ปทุมธานี สมุทรปราการ นครปฐม สมุทรสาคร',
+       'mid': 'เพชรบุรี ประจวบคีรีขันธ์ ราชบุรี กาญจนบุรี สุพรรณบุรี พระนครศรีอยุธยา อยุธยา สระบุรี ลพบุรี อ่างทอง สิงห์บุรี ชัยนาท สมุทรสงคราม นครนายก',
+       'east': 'ชลบุรี ระยอง จันทบุรี ตราด ฉะเชิงเทรา ปราจีนบุรี สระแก้ว',
+       'ne': 'นครราชสีมา บุรีรัมย์ สุรินทร์ ศรีสะเกษ อุบลราชธานี ยโสธร ชัยภูมิ อำนาจเจริญ บึงกาฬ หนองบัวลำภู ขอนแก่น อุดรธานี เลย หนองคาย มหาสารคาม ร้อยเอ็ด กาฬสินธุ์ สกลนคร นครพนม มุกดาหาร',
+       'north': 'เชียงใหม่ เชียงราย ลำปาง ลำพูน แม่ฮ่องสอน น่าน พะเยา แพร่ อุตรดิตถ์ ตาก สุโขทัย พิษณุโลก พิจิตร กำแพงเพชร เพชรบูรณ์ นครสวรรค์ อุทัยธานี',
+       'south': 'ชุมพร ระนอง สุราษฎร์ธานี พังงา ภูเก็ต กระบี่ นครศรีธรรมราช ตรัง พัทลุง สตูล สงขลา ปัตตานี ยะลา นราธิวาส'}
+P2R = {p: r for r, ps in REG.items() for p in ps.split()}
+assert all(h[6] in P2R for h in H), [h for h in H if h[6] not in P2R]
+for r in REG:
+    hs = [h for h in H if P2R[h[6]] == r]; ids = {h[0] for h in hs}
+    out = {'asof': '2569-10-29', 'hosp': hs, 'd': [d for d in D if d[0] in ids]}
+    j = json.dumps(out, ensure_ascii=False)
+    js = f'// รายชื่อแพทย์ ภาค {r} ดึงจากเว็บ รพ. {out["asof"]} — สร้างโดย build_docs.py ห้ามแก้มือ\n' + (f'const DOCS={j};\n' if r == 'central' else f'(window.DOCSR ||= {{}}).{r}={j};\n')
+    print(r, len(hs), 'รพ.', len(out['d']), 'คน')
+    for p in (f'~/Desktop/sick/doctors{"" if r == "central" else "_" + r}.js', f'~/Desktop/thai-doctors/data/{r}.js'):  # สำเนาสำรองบนโฮสต์ + repo GitHub (โหลดผ่าน jsDelivr)
+        os.makedirs(os.path.dirname(os.path.expanduser(p)), exist_ok=True); open(os.path.expanduser(p), 'w', encoding='utf8').write(js)
 import collections; print(len(D), collections.Counter(d[0] for d in D))
