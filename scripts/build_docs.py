@@ -188,6 +188,29 @@ for f in sorted(glob.glob('bkh/*')):
     sub = get('อนุสาขา') if get('อนุสาขา') not in ('ภาษา', 'การศึกษา') else ''
     D.append([hid, N(L[0].split(' | ')[0]), get('ศูนย์และคลินิก'), ' · '.join(x for x in (get('ความชำนาญเฉพาะทางสาขา'), sub) if x), ''])
 
+# ศูนย์การแพทย์กาญจนาภิเษก (ม.มหิดล ศาลายา) หน้า /main/doctor/ รายชื่อทั้งหมดหน้าเดียว: ชื่อ · "ตารางออกตรวจ" · แผนก
+# หัวเฉียว เว็บใหม่ hc-hospital.com (huachiewhospital.com ถูกปล่อยขายแล้ว) wp-sitemap-posts-doctors-1
+H += [['gj', 'ศูนย์การแพทย์กาญจนาภิเษก (ม.มหิดล)', 'รัฐ (ม.มหิดล)', 'พุทธมณฑล', '', 'https://www.gj.mahidol.ac.th/main/doctor/', 'นครปฐม'],
+      ['hc', 'โรงพยาบาลหัวเฉียว', 'เอกชน (มูลนิธิ)', 'ป้อมปราบศัตรูพ่าย', '', 'https://www.hc-hospital.com/doctor-appointment/', 'กรุงเทพฯ']]
+L = lines('gj/list.html')
+for k in range(len(L) - 2):
+    if L[k + 1] == 'ตารางออกตรวจ' and re.search(r'(นพ|พญ|ทพ|ทพญ)\.', L[k]): D.append(['gj', N(L[k]), L[k + 2], '', ''])
+for f in sorted(glob.glob('hc/*')):
+    L = lines(f)
+    if 'ร่วมงานกับ รพ.หัวเฉียว' not in L or 'การศึกษา' not in L: continue
+    j = L.index('การศึกษา'); i = max(k for k in range(j) if L[k] == 'ร่วมงานกับ รพ.หัวเฉียว') + 1  # เมนูซ้ำหลายจุด เอาตัวก่อนหัวข้อการศึกษา
+    sch = L[L.index('ตารางการออกตรวจแพทย์'):] if 'ตารางการออกตรวจแพทย์' in L else []
+    D.append(['hc', N(L[i]), '', ' · '.join(L[i + 1:j][:2]), days([x.replace('–', '-') for x in sch[:30]])])
+
+# รพ.ศูนย์บริการการแพทย์นนทบุรี (ห้าแยกพระราม 5) nmc.moph.go.th/ค้นหาแพทย์/ — ลงไว้ 4 คน · หน้าแผนไทย/จีนมีแต่เบอร์ ไม่มีรายชื่อ
+H.append(['nmc', 'โรงพยาบาลศูนย์บริการการแพทย์นนทบุรี', 'รัฐ (สธ.) · มีแพทย์แผนไทย (ชั้น 5 ต่อ 5010) และแผนจีน (ต่อ 6000)', 'บางกรวย', '02-432-6167-8', 'https://nmc.moph.go.th/', 'นนทบุรี'])
+L = lines('nmc/find.html'); L = L[L.index('แพทย์เฉพาะทาง') + 1:next(k for k, x in enumerate(L) if 'เลขที่ 155' in x)]
+idx = [k for k, x in enumerate(L) if re.match(r'(นพ|พญ)\.', x)] + [len(L)]
+for a, b in zip(idx, idx[1:]):
+    seg = L[a:b]; t = ' '.join(seg[1:])
+    dy = [d for d in DAYS if 'วัน' + d in t or (d == 'พุธ' and 'วันพุทธ' in t)]
+    D.append(['nmc', N(seg[0]), seg[1], seg[2] if seg[2] != 'ตารางแพทย์ออกตรวจ' else '', ', '.join(dy)])
+
 # เก็บเฉพาะแพทย์/ทันตแพทย์ (มีคำนำหน้า) ตัดนักกายภาพ นักฝึกพูด ฯลฯ ที่บางเว็บลงปนมา
 DR = re.compile(r'^([ก-๙]{1,4}\.|\(พิเศษ\)|(พัน|นาวา|เรือ|ร้อย)[ก-๙]*\s|\s)*(นพ|พญ|ทพ|ทพญ)\.')  # ยศ/ตำแหน่งวิชาการนำหน้าได้ เช่น ผศ.พ.ท.นพ.
 ok = lambda d: DR.match(d[1]) or ('ทันต' in d[2] and not re.match(r'^(คุณ|นาง|นาย)', d[1]))  # ทันตแพทย์บางเว็บไม่ใส่คำนำหน้า
