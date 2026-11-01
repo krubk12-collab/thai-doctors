@@ -215,6 +215,11 @@ for f in sorted(glob.glob('hc/*')):
 
 # รพ.ศูนย์บริการการแพทย์นนทบุรี (ห้าแยกพระราม 5) nmc.moph.go.th/ค้นหาแพทย์/ — ลงไว้ 4 คน · หน้าแผนไทย/จีนมีแต่เบอร์ ไม่มีรายชื่อ
 H.append(['nmc', 'โรงพยาบาลศูนย์บริการการแพทย์นนทบุรี', 'รัฐ (สธ.) · มีแพทย์แผนไทย (ชั้น 5 ต่อ 5010) และแผนจีน (ต่อ 6000)', 'บางกรวย', '02-432-6167-8', 'https://nmc.moph.go.th/', 'นนทบุรี'])
+# รพ.ตากสิน (สำนักการแพทย์ กทม.) taksinhosp.go.th/ตารางออกตรวจแพทย/DocNameList — หน้า Google Sites ต้องอ่านผ่าน Chrome · ดึง 1 พ.ย.69 112 คน (tks/list.txt ชื่อ|สาขา · พญ./นพ. เดาจากคำนำหน้านาย/นาง/นางสาว)
+H.append(['tks', 'โรงพยาบาลตากสิน', 'รัฐ (สำนักการแพทย์ กทม.)', 'คลองสาน', '02-437-0123, 02-437-1206', 'https://www.taksinhosp.go.th/', 'กรุงเทพฯ'])
+for l in open('tks/list.txt', encoding='utf-8').read().splitlines():
+    n, sp = (l.split('|') + [''])[:2]
+    if n.strip(): D.append(['tks', n.strip(), '', sp.strip(), ''])
 L = lines('nmc/find.html'); L = L[L.index('แพทย์เฉพาะทาง') + 1:next(k for k, x in enumerate(L) if 'เลขที่ 155' in x)]
 idx = [k for k, x in enumerate(L) if re.match(r'(นพ|พญ)\.', x)] + [len(L)]
 for a, b in zip(idx, idx[1:]):
