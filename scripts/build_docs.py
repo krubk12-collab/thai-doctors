@@ -220,6 +220,10 @@ H.append(['tks', 'โรงพยาบาลตากสิน', 'รัฐ (�
 for l in open('tks/list.txt', encoding='utf-8').read().splitlines():
     n, sp = (l.split('|') + [''])[:2]
     if n.strip(): D.append(['tks', n.strip(), '', sp.strip(), ''])
+# รพ.บางใหญ่ (hid 'by' มีทันตแพทย์แล้ว) bangyaihospital.moph.go.th/Person.html — ผ่าน Chrome (Cloudflare) 1 พ.ย.69 · แพทย์ 29 คน (byh/list.txt) ไม่รวมทันตแพทย์ 15/แผนไทย 4 ในหน้านั้น
+for l in open('byh/list.txt', encoding='utf-8').read().splitlines():
+    n, sp = (l.split('|') + [''])[:2]
+    if n.strip(): D.append(['by', n.strip(), '', sp.strip(), ''])
 L = lines('nmc/find.html'); L = L[L.index('แพทย์เฉพาะทาง') + 1:next(k for k, x in enumerate(L) if 'เลขที่ 155' in x)]
 idx = [k for k, x in enumerate(L) if re.match(r'(นพ|พญ)\.', x)] + [len(L)]
 for a, b in zip(idx, idx[1:]):
