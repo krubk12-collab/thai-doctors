@@ -359,7 +359,7 @@ for b, (amp, prov) in KB.items():
 
 # เก็บเฉพาะแพทย์/ทันตแพทย์ (มีคำนำหน้า) ตัดนักกายภาพ นักฝึกพูด ฯลฯ ที่บางเว็บลงปนมา
 DR = re.compile(r'^([ก-๙]{1,4}\.|\(พิเศษ\)|(พัน|นาวา|เรือ|ร้อย)[ก-๙]*\s|\s)*(นพ|พญ|ทพ|ทพญ)\.')  # ยศ/ตำแหน่งวิชาการนำหน้าได้ เช่น ผศ.พ.ท.นพ.
-ok = lambda d: d[1].startswith('🌿') or DR.match(d[1]) or re.match(r'^(พจ|พท|พทป)\.', d[1]) or ('ทันต' in d[2] and not re.match(r'^(คุณ|นาง|นาย)', d[1]))  # ทันตแพทย์บางเว็บไม่ใส่คำนำหน้า
+ok = lambda d: d[1].startswith(('🌿', '🩺')) or DR.match(d[1]) or re.match(r'^(พจ|พท|พทป)\.', d[1]) or ('ทันต' in d[2] and not re.match(r'^(คุณ|นาง|นาย)', d[1]))  # ทันตแพทย์บางเว็บไม่ใส่คำนำหน้า
 drop = [d for d in D if not ok(d)]; D = [d for d in D if ok(d)]
 import collections as _c; print('ตัดที่ไม่ใช่แพทย์', len(drop), _c.Counter(d[0] for d in drop), [d[1] for d in drop if d[0] not in ('tb',)][:12])
 # หมอคนเดียวหลายแถว (หลายแผนก/หลาย URL) → รวมเป็นแถวเดียว แผนกที่เพิ่มต่อท้ายในช่องสาขา
