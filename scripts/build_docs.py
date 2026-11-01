@@ -224,6 +224,10 @@ for l in open('tks/list.txt', encoding='utf-8').read().splitlines():
 for l in open('byh/list.txt', encoding='utf-8').read().splitlines():
     n, sp = (l.split('|') + [''])[:2]
     if n.strip(): D.append(['by', n.strip(), '', sp.strip(), ''])
+# รพ.พระนั่งเกล้า: ตารางออกตรวจบนเว็บว่างทุกคลินิก → อายุรแพทย์ 49 คนจากภาคผนวก 6 หลักสูตรแพทย์ประจำบ้าน (pnk/assets/med-1.pdf) 1 พ.ย.69 (pnk/list.txt)
+for l in open('pnk/list.txt', encoding='utf-8').read().splitlines():
+    n, sp = (l.split('|') + [''])[:2]
+    if n.strip(): D.append(['pnk', n.strip(), 'กลุ่มงานอายุรกรรม', sp.strip(), ''])
 L = lines('nmc/find.html'); L = L[L.index('แพทย์เฉพาะทาง') + 1:next(k for k, x in enumerate(L) if 'เลขที่ 155' in x)]
 idx = [k for k, x in enumerate(L) if re.match(r'(นพ|พญ)\.', x)] + [len(L)]
 for a, b in zip(idx, idx[1:]):
